@@ -80,12 +80,40 @@ int makeMove(int *board, const int sq, const side){
     board[sq] = side;
 }
 
-int getComputerMove(const int *board){
+int getWinningMove(int *board, const int side){
+    int ourMove = -1;
+    int winFound = 0;
+    int index = 0;
+
+    for(index = 0; index < 9; ++index){
+        if(board[ConvertTo25[index]] == EMPTY){
+            ourMove = ConvertTo25[index];
+            board[ourMove] = side;
+
+            if(findThreeInARow(board, ourMove, side) == 3){
+                winFound = 1;
+            }
+            board[ourMove] = EMPTY;
+            if(winFound == 1){
+                break;
+            }
+            ourMove = -1;
+        };
+    }
+    return ourMove;
+}
+
+int getComputerMove(int *board, const int side){
     int index = 0;
     int numFree = 0;
     int availableMoves[9];
     int randMove = 0;
 
+    randMove = getWinningMove(board, side);
+    if(randMove != -1)
+        return randMove;
+
+    randMove = 0;
     for(index = 0; index < 9; ++index){
         if(board[ConvertTo25[index]] == EMPTY){
             availableMoves[numFree++] = ConvertTo25[index];
@@ -123,7 +151,7 @@ int getHumanMove(const int *board){
             continue;
         }
 
-        move --; // Zero indexing
+        move--; // Zero indexing
 
         if(board[ConvertTo25[move]] != EMPTY){
             move = -1;
@@ -152,7 +180,7 @@ void runGame(){
             makeMove(&board[0], lastMoveMade, side);
             side = CROSSES;
         }else{
-            lastMoveMade = getComputerMove(&board[0]);
+            lastMoveMade = getComputerMove(&board[0], side);
             makeMove(&board[0], lastMoveMade, side);
             side = NOUGHTS;
             printBoard(&board[0]);
