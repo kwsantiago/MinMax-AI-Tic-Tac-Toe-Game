@@ -13,6 +13,9 @@ const int ConvertTo25[9] = {
     16,17,18
 };
 
+const int inMiddle = 4;
+const int corners[4] = {0,2,6,8};
+
 int getNumForDir(int startSq, const int dir, const int *board, const int us){
     int found = 0;
     while(board[startSq] != BORDER){
@@ -56,7 +59,7 @@ void printBoard(const int *board){
     int index = 0;
     char pceChars[] = "OX|-";
 
-    printf("\n\nBoard:\n\n");
+    printf("\n");
     for(index = 0; index < 9; ++index){
         if(index != 0 && index % 3 == 0){
             printf("\n\n");
@@ -78,6 +81,25 @@ int hasEmpty(const int *board){
 
 int makeMove(int *board, const int sq, const side){
     board[sq] = side;
+}
+
+int getNextBest(const int *board){
+    int ourMove = ConvertTo25[inMiddle];
+    if(board[ourMove] == EMPTY){
+        return ourMove;
+    }
+
+    int index = 0;
+    ourMove = -1;
+
+    for(index = 0; index < 4; index++){
+        ourMove = ConvertTo25[corners[index]];
+        if(board[ourMove] == EMPTY){
+            break;
+        }
+        ourMove = -1;
+    }
+    return ourMove;
 }
 
 int getWinningMove(int *board, const int side){
@@ -113,6 +135,14 @@ int getComputerMove(int *board, const int side){
     if(randMove != -1)
         return randMove;
 
+    randMove = getWinningMove(board, side ^ 1);
+    if(randMove != -1)
+        return randMove;
+
+    randMove = getNextBest(board);
+    if(randMove != -1)
+        return randMove;
+
     randMove = 0;
     for(index = 0; index < 9; ++index){
         if(board[ConvertTo25[index]] == EMPTY){
@@ -130,7 +160,7 @@ int getHumanMove(const int *board){
     int move = -1;
 
     while(moveOK == 0){
-        printf("Please enter a move from 1 to 9: ");
+        printf("\nPlease enter a move from 1 to 9: ");
         fgets(userInput, 3, stdin);
         fflush(stdin);
 
@@ -187,7 +217,7 @@ void runGame(){
         }
 
         if(findThreeInARow(board, lastMoveMade, side ^ 1) == 3){
-            printf("Game over!\n");
+            printf("\nGame over!\n");
             gameOver = 1;
             if(side == NOUGHTS)
                 printf("Computer Wins\n");
@@ -196,7 +226,7 @@ void runGame(){
         }
 
         if(!hasEmpty(board)){
-            printf("Game over!\n");
+            printf("\nGame over!\n");
             gameOver = 1;
             printf("It's a draw\n");
         }
