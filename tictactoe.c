@@ -16,6 +16,10 @@ const int ConvertTo25[9] = {
 const int inMiddle = 4;
 const int corners[4] = {0,2,6,8};
 
+int ply = 0;
+int positions = 0;
+int maxPly = 0;
+
 int getNumForDir(int startSq, const int dir, const int *board, const int us){
     int found = 0;
     while(board[startSq] != BORDER){
@@ -30,7 +34,7 @@ int getNumForDir(int startSq, const int dir, const int *board, const int us){
 
 int findThreeInARow(const int *board, const int ourindex, const int us){
     int dirIndex = 0;
-    int dir =0;
+    int dir = 0;
     int threeCount = 1;
 
     for(dirIndex = 0; dirIndex < 4; ++dirIndex){
@@ -42,6 +46,77 @@ int findThreeInARow(const int *board, const int ourindex, const int us){
         threeCount = 1;
     }
     return threeCount;
+}
+
+int findThreeInARowAllBoard(const int *board, const int us){
+    int threeFound = 0;
+    int index;
+    for(index = 0; index < 9; ++index){
+        if(board[ConvertTo25[index]] == us){
+            if(findThreeInARow(board, ConvertTo25[index], us) == 3){
+                threeFound = 1;
+                break;
+            }
+        }
+    }
+    return threeFound;
+}
+
+int evalForWin(const int *board, const int us){
+    if(findThreeInARowAllBoard(board, us) != 0)
+        return 1;
+    if(findThreeInARowAllBoard(board, us ^ 1) != 0)
+        return -1;
+
+    return 0;
+}
+
+int MinMax(int *board, int side){
+    int moveList[9];
+    int moveCount = 0;
+    int bestScore = -2;
+    int score = -2;
+    int bestMove = -1;
+    int move;
+    int index;
+
+    if(ply > maxPly)
+        maxPly = ply;
+    positions++;
+
+    if(ply > 0){
+        score = evalForWin(board, side);
+        if(score != 0)
+            return score;
+    }
+
+    // fill move list
+    for(index = 0; index < 9; ++index){
+        if(board[ConvertTo25[index]] == EMPTY)
+            moveList[moveCount++] = ConvertTo25[index];
+    }
+
+    // loop all moves
+    for(index = 0; index < moveCount; ++index){
+        move = moveList[index];
+        board[move] = side;
+
+        ply++;
+        score = -MinMax(board, side ^ 1);
+
+        if(score > bestScore){
+            bestScore = score;
+            bestMove = move;
+        }
+        board[move] = EMPTY;
+        ply--;
+    }
+    if(moveCount == 0)
+        bestScore = findThreeInARowAllBoard(board, side);
+    if(ply != 0)
+        return bestScore;
+    else
+        return bestMove;
 }
 
 void initializeBoard(int *board){
@@ -126,32 +201,12 @@ int getWinningMove(int *board, const int side){
 }
 
 int getComputerMove(int *board, const int side){
-    int index = 0;
-    int numFree = 0;
-    int availableMoves[9];
-    int randMove = 0;
-
-    randMove = getWinningMove(board, side);
-    if(randMove != -1)
-        return randMove;
-
-    randMove = getWinningMove(board, side ^ 1);
-    if(randMove != -1)
-        return randMove;
-
-    randMove = getNextBest(board);
-    if(randMove != -1)
-        return randMove;
-
-    randMove = 0;
-    for(index = 0; index < 9; ++index){
-        if(board[ConvertTo25[index]] == EMPTY){
-            availableMoves[numFree++] = ConvertTo25[index];
-        };
-    }
-
-    randMove = (rand() % numFree);
-    return availableMoves[randMove];
+    ply = 0;
+    positions = 0;
+    maxPly = 0;
+    int best = MinMax(board, side);
+    printf("Finished searching positions: %d maxDepth: %d bestMove: %d\n", positions, maxPly, best);
+    return best;
 }
 
 int getHumanMove(const int *board){
